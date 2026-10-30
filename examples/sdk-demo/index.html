@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LearnLens SDK demo: warehouse safety scenario</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #F4F6F9; color: #0F172A; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .card { background: #fff; border: 1px solid #E2E6EC; border-radius: 12px; padding: 24px; }
+  label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #5B6474; margin-bottom: 12px; }
+  input { min-height: 40px; padding: 0 10px; border: 1px solid #D5DAE1; border-radius: 8px; font: inherit; color: #0F172A; }
+  button { min-height: 44px; padding: 0 18px; border: 1px solid #D5DAE1; border-radius: 8px; background: #fff; font: inherit; font-weight: 600; cursor: pointer; margin: 4px 8px 4px 0; }
+  button.primary { background: #2563EB; border-color: #2563EB; color: #fff; }
+  .hint { background: #EEF3FE; color: #1E3A8A; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+  .bad { background: #FFF4EC; color: #7C2D12; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="setup">
+    <h1 style="margin-top:0;font-size:22px">LearnLens SDK demo</h1>
+    <p>A tiny branching scenario that reports decisions, errors and hints with the LearnLens JavaScript SDK. In LearnLens, create a course with the <strong>JavaScript SDK</strong> method, then paste its details here.</p>
+    <label>LearnLens server address <input id="endpoint" value="http://localhost:4000"></label>
+    <label>Course key (starts with ck_) <input id="key" placeholder="ck_..."></label>
+    <label>Your name <input id="name" value="Demo Learner"></label>
+    <button class="primary" id="start">Start scenario</button>
+  </div>
+  <div class="card" id="scene" hidden></div>
+</div>
+<script id="sdk"></script>
+<script>
+var scenes = [
+  { id: 'pre-check', name: 'Pre-use inspection', q: 'Before driving, the forklift tyre looks worn. What do you do?',
+    options: [['Report it and tag the forklift out of use', true], ['Drive carefully and report it later', false]], decision: 'check_tyres', critical: false },
+  { id: 'route', name: 'Driving the route', q: 'A pedestrian steps into the aisle ahead of you.',
+    options: [['Stop and wait for eye contact', true], ['Sound the horn and keep going', false]], decision: 'pedestrian_zone', critical: true },
+  { id: 'loading', name: 'Loading the pallet', q: 'The pallet has a broken board on one side.',
+    options: [['Lift it slowly and keep it low', false], ['Refuse the load and report the pallet', true]], decision: 'pallet_hazard', critical: true }
+];
+var track, i = 0, right = 0, criticalErrors = 0;
+var box = document.getElementById('scene');
+
+document.getElementById('start').onclick = function () {
+  var endpoint = document.getElementById('endpoint').value.replace(/\/$/, '');
+  var s = document.createElement('script');
+  s.src = endpoint + '/sdk/learnlens.js'; // served by your LearnLens server
+  s.onload = function () {
+    var name = document.getElementById('name').value || 'Demo Learner';
+    track = LearnLens.init({
+      endpoint: endpoint,
+      key: document.getElementById('key').value.trim(),
+      learner: { id: 'demo-' + name.toLowerCase().replace(/\W+/g, '-'), name: name, team: 'Demo' },
+      debug: true
+    });
+    document.getElementById('setup').hidden = true;
+    box.hidden = false;
+    show();
+  };
+  s.onerror = function () { alert('Could not load the SDK from ' + endpoint + '. Is LearnLens running?'); };
+  document.body.appendChild(s);
+};
+
+function show() {
+  if (i >= scenes.length) return finish();
+  var sc = scenes[i];
+  track.page(sc.id, sc.name);
+  box.innerHTML = '<p style="color:#5B6474;margin:0 0 4px">Scene ' + (i + 1) + ' of ' + scenes.length + ' · ' + sc.name + '</p>' +
+    '<h2 style="margin:0 0 16px;font-size:20px">' + sc.q + '</h2><div id="opts"></div>' +
+    '<button id="hint">I need a hint</button><div id="msg"></div>';
+  sc.options.forEach(function (o) {
+    var b = document.createElement('button');
+    b.textContent = o[0];
+    b.onclick = function () { choose(sc, o[1]); };
+    document.getElementById('opts').appendChild(b);
+  });
+  document.getElementById('hint').onclick = function () {
+    track.hint(sc.decision);
+    document.getElementById('msg').innerHTML = '<p class="hint">Think about what could hurt someone if you carry on.</p>';
+  };
+}
+
+function choose(sc, correct) {
+  track.decision(sc.decision, { correct: correct, critical: sc.critical, name: sc.q });
+  if (correct) right++;
+  else {
+    track.error(sc.decision, { critical: sc.critical });
+    if (sc.critical) criticalErrors++;
+  }
+  i++;
+  show();
+}
+
+function finish() {
+  var score = right / scenes.length;
+  var passed = criticalErrors === 0 && score >= 0.67;
+  track.complete({ passed: passed, score: score }).then(function () {
+    box.innerHTML = '<h2 style="margin-top:0">' + (passed ? 'Passed' : 'Not passed') + '</h2>' +
+      '<p>' + right + ' of ' + scenes.length + ' safe decisions' + (criticalErrors ? ', ' + criticalErrors + ' critical error(s)' : '') + '.</p>' +
+      '<p class="hint">Your decisions were sent to LearnLens. Open its dashboard to see them.</p>';
+  });
+}
+</script>
+</body>
+</html>

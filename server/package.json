@@ -1,0 +1,27 @@
+{
+  "name": "learnlens-server",
+  "version": "0.1.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "simulate": "node scripts/simulate.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.13",
+    "adm-zip": "^0.6.1",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "fast-xml-parser": "^5.11.2",
+    "multer": "^2.5.0",
+    "node-cron": "^4.6.0",
+    "pdfkit": "^0.20.2",
+    "pg": "^8.23.1"
+  },
+  "type": "module"
+}

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Office Safety Basics</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #F4F6F9; color: #0F172A; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px; }
+  .card { background: #fff; border: 1px solid #E2E6EC; border-radius: 12px; padding: 28px; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  .step { color: #5B6474; font-size: 14px; margin-bottom: 20px; }
+  label { display: block; padding: 12px 14px; border: 1px solid #D5DAE1; border-radius: 8px; margin: 8px 0; cursor: pointer; }
+  button { min-height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: #2563EB; color: #fff; font: inherit; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .result { font-size: 18px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card" id="app"></div></div>
+<script>
+/* A plain SCORM 1.2 course, written the way authoring tools write them.
+   It knows nothing about LearnLens: the wrapper adds tracking on top. */
+var api = null;
+(function find(win) {
+  for (var i = 0; i < 10 && win; i++) {
+    if (win.API) { api = win.API; return; }
+    if (win.parent === win) break;
+    win = win.parent;
+  }
+})(window);
+function lms(fn) { if (api) { try { return api[fn].apply(api, [].slice.call(arguments, 1)); } catch (e) {} } return ''; }
+
+var pages = [
+  { id: 'p1', title: 'Welcome', body: '<p>In ten minutes you will learn how to keep your workspace safe.</p>' },
+  { id: 'p2', title: 'Trip hazards', body: '<p>Cables, boxes and wet floors cause most office injuries. Report them and fix what you safely can.</p>' },
+  { id: 'p3', title: 'Your workstation', body: '<p>Top of the screen at eye level, feet flat, a break every hour.</p>' },
+  { id: 'quiz', title: 'Quick check', quiz: true }
+];
+var questions = [
+  { id: 'q1', text: 'You see a cable across a walkway. What do you do first?', options: ['Step over it', 'Report it or tidy it safely', 'Ignore it'], correct: 1 },
+  { id: 'q2', text: 'Where should the top of your screen be?', options: ['At eye level', 'Below your chin', 'Above your head'], correct: 0 },
+  { id: 'q3', text: 'How often should you take a short break?', options: ['Once a day', 'Every hour', 'Never'], correct: 1 }
+];
+var current = 0;
+var app = document.getElementById('app');
+
+lms('LMSInitialize', '');
+lms('LMSSetValue', 'cmi.core.lesson_status', 'incomplete');
+
+function show(i) {
+  current = i;
+  var p = pages[i];
+  lms('LMSSetValue', 'cmi.core.lesson_location', p.id);
+  lms('LMSCommit', '');
+  var html = '<h1>' + p.title + '</h1><div class="step">Page ' + (i + 1) + ' of ' + pages.length + '</div>';
+  if (!p.quiz) {
+    html += p.body + '<button id="next">Next</button>';
+    app.innerHTML = html;
+    document.getElementById('next').onclick = function () { show(i + 1); };
+    return;
+  }
+  questions.forEach(function (q, n) {
+    html += '<fieldset style="border:0;padding:0;margin:0 0 16px"><legend style="font-weight:600;margin-bottom:6px">' + (n + 1) + '. ' + q.text + '</legend>';
+    q.options.forEach(function (o, k) {
+      html += '<label><input type="radio" name="' + q.id + '" value="' + k + '"> ' + o + '</label>';
+    });
+    html += '</fieldset>';
+  });
+  html += '<button id="submit">Submit answers</button>';
+  app.innerHTML = html;
+  document.getElementById('submit').onclick = submit;
+}
+
+function submit() {
+  var right = 0;
+  questions.forEach(function (q, n) {
+    var picked = document.querySelector('input[name="' + q.id + '"]:checked');
+    var value = picked ? 'abc'.charAt(+picked.value) : '';
+    var ok = picked && +picked.value === q.correct;
+    if (ok) right++;
+    var base = 'cmi.interactions.' + n + '.';
+    lms('LMSSetValue', base + 'id', q.id);
+    lms('LMSSetValue', base + 'type', 'choice');
+    lms('LMSSetValue', base + 'student_response', value);
+    lms('LMSSetValue', base + 'correct_responses.0.pattern', 'abc'.charAt(q.correct));
+    lms('LMSSetValue', base + 'result', ok ? 'correct' : 'wrong');
+  });
+  var score = Math.round(right / questions.length * 100);
+  lms('LMSSetValue', 'cmi.core.score.min', '0');
+  lms('LMSSetValue', 'cmi.core.score.max', '100');
+  lms('LMSSetValue', 'cmi.core.score.raw', String(score));
+  lms('LMSSetValue', 'cmi.core.lesson_status', score >= 60 ? 'passed' : 'failed');
+  lms('LMSCommit', '');
+  lms('LMSFinish', '');
+  app.innerHTML = '<h1>Done</h1><p class="result">You scored ' + score + '%. ' + (score >= 60 ? 'Passed.' : 'Not passed this time.') + '</p>';
+}
+
+show(0);
+</script>
+</body>
+</html>
