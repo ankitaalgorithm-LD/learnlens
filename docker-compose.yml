@@ -1,0 +1,38 @@
+# LearnLens + PostgreSQL. Copy .env.example to .env, fill it in, then:
+#   docker compose up -d
+services:
+  learnlens:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    environment:
+      DATABASE_URL: postgres://learnlens:${POSTGRES_PASSWORD:-learnlens}@db:5432/learnlens
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?Set ADMIN_TOKEN in .env}
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      HASH_SECRET: ${HASH_SECRET:?Set HASH_SECRET in .env}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+    volumes:
+      - learnlens-data:/data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: learnlens
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-learnlens}
+      POSTGRES_DB: learnlens
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learnlens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  learnlens-data:
+  postgres-data:

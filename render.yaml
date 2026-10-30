@@ -1,0 +1,30 @@
+# One-click deploy to Render (https://render.com).
+# Creates the LearnLens web service and a PostgreSQL database, generates the
+# admin token and hashing secret, and sets the public HTTPS address automatically.
+# See docs/DEPLOY.md for a step-by-step guide.
+services:
+  - type: web
+    name: learnlens
+    runtime: node
+    plan: free            # fine for trying it out; use a paid plan for real learners (see docs/DEPLOY.md)
+    buildCommand: npm run setup
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: HASH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: learnlens-db
+          property: connectionString
+      - key: ALERT_WEBHOOK_URL
+        sync: false
+
+databases:
+  - name: learnlens-db
+    plan: free            # free Render databases expire after 30 days; upgrade to keep your data
