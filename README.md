@@ -14,9 +14,9 @@ Most LMSs only tell you who *completed* a course. LearnLens shows what actually 
 
 > **Status: v0.1, a working MVP.** Tested end to end in **Moodle 4.5** with SCORM 1.2 and SCORM 2004 packages (see [What has been tested](#what-has-been-tested)). It is young: pilot one course first, and read [Limitations](#limitations).
 
-**Put it online in a few clicks:** after you've added this project to your GitHub account, replace `YOUR-GITHUB-USERNAME` below and click the button. The step-by-step guide is in **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+**Put it online in a few clicks:** the button below creates your own copy of LearnLens on Render, with HTTPS and a database. The step-by-step guide is in **[docs/DEPLOY.md](docs/DEPLOY.md)**.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/YOUR-GITHUB-USERNAME/learnlens)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ankitaalgorithm-LD/learnlens)
 
 ---
 
